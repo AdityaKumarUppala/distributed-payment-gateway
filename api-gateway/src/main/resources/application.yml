@@ -1,0 +1,47 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  cloud:
+    gateway:
+      routes:
+        - id: customer-service-route
+          uri: ${CUSTOMER_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/api/v1/customers/**
+
+        - id: merchant-service-route
+          uri: ${MERCHANT_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/api/v1/merchants/**
+
+        - id: payment-service-route
+          uri: ${PAYMENT_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/api/v1/payments/**
+
+        - id: refund-service-route
+          uri: ${REFUND_SERVICE_URL:http://localhost:8084}
+          predicates:
+            - Path=/api/v1/refunds/**
+
+        - id: notification-service-route
+          uri: ${NOTIFICATION_SERVICE_URL:http://localhost:8085}
+          predicates:
+            - Path=/api/v1/notifications/**
+
+        - id: audit-service-route
+          uri: ${AUDIT_SERVICE_URL:http://localhost:8086}
+          predicates:
+            - Path=/api/v1/audit-events/**
+
+services:
+  merchant-service:
+    url: ${MERCHANT_SERVICE_URL:http://localhost:8082}
+
+logging:
+  level:
+    org.springframework.cloud.gateway: INFO
+    com.paymentgateway.gateway: DEBUG

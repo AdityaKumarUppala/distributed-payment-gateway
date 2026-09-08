@@ -1,0 +1,6 @@
+target/classes
+target/test-classes
+target/surefire-reports
+target/maven-status
+target/generated-sources
+*.log

@@ -1,0 +1,127 @@
+### =========================================================================
+### Distributed Payment Gateway - Complete End-to-End API Test Suite
+### Base Gateway URL: http://localhost:8080
+### =========================================================================
+
+### 1. Register a Customer
+POST http://localhost:8080/api/v1/customers
+Content-Type: application/json
+
+{
+  "name": "Sarah Connor",
+  "email": "sarah.connor@cyberdyne.com",
+  "phone": "+14155552671"
+}
+
+### 2. Register a Merchant (Generates API Key)
+POST http://localhost:8080/api/v1/merchants
+Content-Type: application/json
+
+{
+  "name": "Cyberdyne Systems",
+  "email": "billing@cyberdyne.com"
+}
+
+### 3. Create a Payment (Authorized with X-API-Key and Idempotency-Key)
+# Note: Replace the X-API-Key value with the apiKey returned in Step 2
+POST http://localhost:8080/api/v1/payments
+Content-Type: application/json
+X-API-Key: mcht_live_example_key
+Idempotency-Key: pay_order_001_unique_key
+
+{
+  "customerId": 1,
+  "merchantId": 1,
+  "amount": 100.00,
+  "currency": "USD"
+}
+
+### 4. Replay Same Payment Request (Idempotency Replay -> Returns original payment without double charge)
+POST http://localhost:8080/api/v1/payments
+Content-Type: application/json
+X-API-Key: mcht_live_example_key
+Idempotency-Key: pay_order_001_unique_key
+
+{
+  "customerId": 1,
+  "merchantId": 1,
+  "amount": 100.00,
+  "currency": "USD"
+}
+
+### 5. Send Same Idempotency Key with Modified Payload (Triggers 422 IDEMPOTENCY_CONFLICT)
+POST http://localhost:8080/api/v1/payments
+Content-Type: application/json
+X-API-Key: mcht_live_example_key
+Idempotency-Key: pay_order_001_unique_key
+
+{
+  "customerId": 1,
+  "merchantId": 1,
+  "amount": 999.00,
+  "currency": "USD"
+}
+
+### 6. Test Payment Provider Failure Simulation (Amount ending in .91 triggers INSUFFICIENT_FUNDS)
+POST http://localhost:8080/api/v1/payments
+Content-Type: application/json
+X-API-Key: mcht_live_example_key
+Idempotency-Key: pay_insufficient_funds_test
+
+{
+  "customerId": 1,
+  "merchantId": 1,
+  "amount": 50.91,
+  "currency": "USD"
+}
+
+### 7. Issue Partial Refund #1 ($30.00 on $100.00 Payment)
+# Replace {paymentRef} with actual paymentReference (e.g. pay_...)
+POST http://localhost:8080/api/v1/payments/pay_example_ref/refunds
+Content-Type: application/json
+X-API-Key: mcht_live_example_key
+
+{
+  "amount": 30.00,
+  "reason": "Customer returned partial item"
+}
+
+### 8. Issue Partial Refund #2 ($20.00 on remaining $70.00)
+POST http://localhost:8080/api/v1/payments/pay_example_ref/refunds
+Content-Type: application/json
+X-API-Key: mcht_live_example_key
+
+{
+  "amount": 20.00,
+  "reason": "Defective discount adjustment"
+}
+
+### 9. Attempt Over-Refund ($60.00 on remaining $50.00 -> Triggers 400 INVALID_REFUND_REQUEST)
+POST http://localhost:8080/api/v1/payments/pay_example_ref/refunds
+Content-Type: application/json
+X-API-Key: mcht_live_example_key
+
+{
+  "amount": 60.00,
+  "reason": "Exceeding available balance"
+}
+
+### 10. Check Refund Summary (Original: $100, Total Refunded: $50, Remaining: $50)
+GET http://localhost:8080/api/v1/payments/pay_example_ref/refunds/summary
+X-API-Key: mcht_live_example_key
+
+### 11. Final Refund ($50.00 settling entire payment to REFUNDED)
+POST http://localhost:8080/api/v1/payments/pay_example_ref/refunds
+Content-Type: application/json
+X-API-Key: mcht_live_example_key
+
+{
+  "amount": 50.00,
+  "reason": "Full settlement"
+}
+
+### 12. Query Dispatched Notifications History
+GET http://localhost:8080/api/v1/notifications
+
+### 13. Query Immutable Audit Trail Timeline for Payment
+GET http://localhost:8080/api/v1/audit-events/aggregate/pay_example_ref

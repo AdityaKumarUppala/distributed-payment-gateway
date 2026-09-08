@@ -1,0 +1,10 @@
+.git
+.gitignore
+.idea
+*.iml
+target/
+*.log
+docker-compose.yml
+docker/
+test-endpoints.http
+README.md
